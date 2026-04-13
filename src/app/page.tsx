@@ -1,0 +1,123 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import type { ScrapeApiResponse, ScrapeHistoryItem, ScrapeRequest, ScrapeResult } from '@/types/scrape';
+import { HistoryPanel } from '@/components/HistoryPanel';
+import { InputPanel } from '@/components/InputPanel';
+import { ResultPanel } from '@/components/ResultPanel';
+
+const HISTORY_KEY = 'scrapelab_history';
+const MAX_HISTORY = 50;
+
+export default function HomePage() {
+  const [result, setResult] = useState<ScrapeResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<ScrapeHistoryItem[]>([]);
+
+  // localStorage から履歴を復元
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) setHistory(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const saveHistory = useCallback((items: ScrapeHistoryItem[]) => {
+    setHistory(items);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (request: ScrapeRequest) => {
+      setIsLoading(true);
+      setError(null);
+      setResult(null);
+
+      try {
+        const res = await fetch('/api/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        });
+
+        const data: ScrapeApiResponse = await res.json();
+
+        if (!data.success || !data.result) {
+          setError(data.error ?? '不明なエラー');
+          return;
+        }
+
+        setResult(data.result);
+
+        // 履歴に追加
+        const item: ScrapeHistoryItem = {
+          id: uuidv4(),
+          request,
+          result: data.result,
+          timestamp: new Date().toISOString(),
+        };
+        saveHistory([...history, item].slice(-MAX_HISTORY));
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [history, saveHistory],
+  );
+
+  const handleClearHistory = useCallback(() => {
+    saveHistory([]);
+  }, [saveHistory]);
+
+  return (
+    <div className="flex flex-col h-screen">
+      {/* トップバー */}
+      <header className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+        <span className="text-base font-bold text-white tracking-tight">🔬 Scrape Lab</span>
+        <span className="text-xs text-gray-600">手動スクレイピング実験ツール</span>
+        <div className="ml-auto flex items-center gap-3 text-xs text-gray-600">
+          <span>Phase 1 — MVP</span>
+          <a
+            href="https://github.com/kaeru07/note"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline"
+          >
+            GitHub
+          </a>
+        </div>
+      </header>
+
+      {/* 3カラムレイアウト */}
+      <div className="flex flex-1 min-h-0">
+        {/* 左：入力パネル */}
+        <div className="w-64 flex-shrink-0 border-r border-gray-800">
+          <InputPanel onSubmit={handleSubmit} isLoading={isLoading} />
+        </div>
+
+        {/* 中央：結果パネル */}
+        <div className="flex-1 min-w-0">
+          <ResultPanel result={result} isLoading={isLoading} error={error} />
+        </div>
+
+        {/* 右：履歴パネル */}
+        <div className="w-72 flex-shrink-0 border-l border-gray-800">
+          <HistoryPanel
+            history={history}
+            onRerun={handleSubmit}
+            onClear={handleClearHistory}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
