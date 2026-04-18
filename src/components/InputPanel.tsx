@@ -14,6 +14,10 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
   const [mode, setMode] = useState<ScrapeMode>('static');
   const [profileId, setProfileId] = useState('generic');
   const [autoDetect, setAutoDetect] = useState(true);
+  const [showSelectors, setShowSelectors] = useState(false);
+  const [titleSel, setTitleSel] = useState('');
+  const [bodySel, setBodySel] = useState('');
+  const [linkSel, setLinkSel] = useState('');
 
   const handleUrlChange = (value: string) => {
     setUrl(value);
@@ -30,10 +34,14 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
+    const t = titleSel.trim() || undefined;
+    const b = bodySel.trim() || undefined;
+    const l = linkSel.trim() || undefined;
     onSubmit({
       url: url.trim(),
       mode,
       siteProfileId: profileId,
+      selectors: (t || b || l) ? { title: t, body: b, links: l } : undefined,
     });
   };
 
@@ -114,6 +122,40 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
           <p className="mt-1 text-xs text-gray-600">
             {BUILT_IN_PROFILES.find((p) => p.id === profileId)?.description ?? ''}
           </p>
+        </div>
+
+        {/* CSSセレクタ (オプション) */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowSelectors(!showSelectors)}
+            className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-gray-300 mb-1"
+          >
+            <span>CSSセレクタ <span className="text-gray-600">(オプション)</span></span>
+            <span>{showSelectors ? '▲' : '▼'}</span>
+          </button>
+          {showSelectors && (
+            <div className="flex flex-col gap-2 mt-1 pl-1 border-l border-gray-700">
+              {[
+                { label: 'タイトル', val: titleSel, set: setTitleSel, ph: 'h1' },
+                { label: '本文', val: bodySel, set: setBodySel, ph: 'article' },
+                { label: 'リンク', val: linkSel, set: setLinkSel, ph: 'nav a' },
+              ].map(({ label, val, set, ph }) => (
+                <div key={label}>
+                  <label className="block text-xs text-gray-500 mb-0.5">{label}</label>
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder={`例: ${ph}`}
+                    className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs
+                               text-gray-100 placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
+              ))}
+              <p className="text-xs text-gray-600">空欄は既存の汎用抽出を使用</p>
+            </div>
+          )}
         </div>
 
         {/* 実行ボタン */}

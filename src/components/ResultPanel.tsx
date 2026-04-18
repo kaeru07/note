@@ -146,11 +146,48 @@ export function ResultPanel({ result, isLoading, error }: Props) {
 // ── タブコンテンツ ─────────────────────────────────────────
 
 function OverviewTab({ result }: { result: ScrapeResult }) {
+  const extractionMode = result.extractionMode ?? 'generic';
   return (
     <div className="space-y-3">
+      {/* 警告ボックス */}
+      {result.warnings && result.warnings.length > 0 && (
+        <div className="bg-yellow-950 border border-yellow-800 rounded p-3">
+          <p className="text-yellow-400 text-xs font-semibold mb-1">⚠ 警告</p>
+          <ul className="space-y-0.5">
+            {result.warnings.map((w, i) => (
+              <li key={i} className="text-yellow-300 text-xs font-mono break-all">{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <InfoRow label="URL" value={result.url} mono />
       <InfoRow label="タイトル" value={result.title} />
       <InfoRow label="モード" value={result.mode} mono />
+
+      {/* 抽出方式 */}
+      <div className="flex gap-3">
+        <span className="text-xs text-gray-500 w-24 shrink-0">抽出方式</span>
+        <span
+          className={`text-xs px-1.5 py-0.5 rounded font-mono ${
+            extractionMode === 'selector-based'
+              ? 'bg-purple-900 text-purple-300'
+              : 'bg-gray-800 text-gray-400'
+          }`}
+        >
+          {extractionMode}
+        </span>
+      </div>
+
+      {/* セレクタ一致件数 */}
+      {result.selectorMatchInfo && (
+        <InfoRow
+          label="セレクタ一致"
+          value={`title: ${result.selectorMatchInfo.titleCount}件 / body: ${result.selectorMatchInfo.bodyCount}件 / link: ${result.selectorMatchInfo.linkCount}件`}
+          mono
+        />
+      )}
+
       <InfoRow label="ステータス" value={result.statusCode ? `HTTP ${result.statusCode}` : '—'} />
       <InfoRow label="実行時間" value={`${result.durationMs}ms`} mono />
       <InfoRow label="リンク数" value={`${result.links.length}`} mono />

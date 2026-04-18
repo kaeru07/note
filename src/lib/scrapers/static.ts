@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 // undici は Node.js 18+ に組み込み済み。カスタム Agent で TLS 設定を制御する。
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Agent } = require('undici') as typeof import('undici');
-import type { ScrapeLink, ScrapeRequest, ScrapeResult } from '@/types/scrape';
+import type { ExtractionMode, ScrapeLink, ScrapeRequest, ScrapeResult, SelectorMatchInfo } from '@/types/scrape';
 import { BaseScraper } from './base';
 
 // 環境変数で TLS 検証を無効化できる (ローカル開発・自己署名証明書対応)
@@ -73,25 +73,75 @@ export class StaticScraper extends BaseScraper {
   ): ScrapeResult {
     const $ = cheerio.load(html);
     const sel = request.selectors ?? {};
+    const warnings: string[] = [];
 
-    // ── タイトル (title → og:title → h1 の順でフォールバック) ──
-    const titleFromSelector = sel.title ? $(sel.title).first().text().trim() : '';
+    const hasTitleSel = !!sel.title?.trim();
+    const hasBodySel = !!sel.body?.trim();
+    const hasLinkSel = !!sel.links?.trim();
+    const hasAnySel = hasTitleSel || hasBodySel || hasLinkSel;
+
+    let titleCount = 0;
+    let bodyCount = 0;
+    let linkCount = 0;
+
+    // ── タイトル ──────────────────────────────────────────
+    let titleFromSelector = '';
+    if (hasTitleSel) {
+      try {
+        const matched = $(sel.title!);
+        titleCount = matched.length;
+        if (titleCount > 0) {
+          titleFromSelector = matched.first().text().trim();
+        } else {
+          warnings.push(`titleSelector "${sel.title}" に一致する要素がありませんでした (0件)`);
+        }
+      } catch {
+        warnings.push(`titleSelector "${sel.title}" は無効なCSSセレクタです`);
+      }
+    }
     const titleFromTag = $('title').text().trim();
     const titleFromOg = $('meta[property="og:title"]').attr('content')?.trim() ?? '';
     const titleFromH1 = $('h1').first().text().trim();
     const title = titleFromSelector || titleFromTag || titleFromOg || titleFromH1 || '(no title)';
 
     // ── 本文 ──────────────────────────────────────────────
-    const $body = sel.body ? $(sel.body) : $('body');
+    let resolvedBodySel: string | undefined;
+    if (hasBodySel) {
+      try {
+        const matched = $(sel.body!);
+        bodyCount = matched.length;
+        if (bodyCount > 0) {
+          resolvedBodySel = sel.body;
+        } else {
+          warnings.push(`bodySelector "${sel.body}" に一致する要素がありませんでした (0件)`);
+        }
+      } catch {
+        warnings.push(`bodySelector "${sel.body}" は無効なCSSセレクタです`);
+      }
+    }
+    const $body = resolvedBodySel ? $(resolvedBodySel) : $('body');
     $body.find('script, style, nav, footer, header, aside, [aria-hidden="true"]').remove();
-    const bodyPreview = $body
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 3000);
+    const bodyPreview = $body.text().replace(/\s+/g, ' ').trim().slice(0, 3000);
 
     // ── リンク ────────────────────────────────────────────
-    const links = this.extractLinks($, request.url, sel.links);
+    let links: ScrapeLink[];
+    if (hasLinkSel) {
+      try {
+        const rawCount = $(sel.links!).length;
+        if (rawCount === 0) {
+          warnings.push(`linkSelector "${sel.links}" に一致する要素がありませんでした (0件)`);
+        }
+        links = this.extractLinks($, request.url, sel.links);
+        linkCount = links.length;
+      } catch {
+        warnings.push(`linkSelector "${sel.links}" は無効なCSSセレクタです`);
+        links = this.extractLinks($, request.url);
+        linkCount = 0;
+      }
+    } else {
+      links = this.extractLinks($, request.url);
+      linkCount = links.length;
+    }
 
     // ── メタタグ ──────────────────────────────────────────
     const meta: Record<string, string> = {};
@@ -100,6 +150,11 @@ export class StaticScraper extends BaseScraper {
       const content = $(el).attr('content') || '';
       if (name && content) meta[name] = content;
     });
+
+    const extractionMode: ExtractionMode = hasAnySel ? 'selector-based' : 'generic';
+    const selectorMatchInfo: SelectorMatchInfo | undefined = hasAnySel
+      ? { titleCount, bodyCount, linkCount }
+      : undefined;
 
     return {
       url: request.url,
@@ -111,6 +166,9 @@ export class StaticScraper extends BaseScraper {
       timestamp: new Date().toISOString(),
       durationMs: Date.now() - t0,
       statusCode,
+      extractionMode,
+      selectorMatchInfo,
+      warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
 

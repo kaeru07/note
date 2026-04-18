@@ -6,6 +6,16 @@
 /** スクレイピング実行モード */
 export type ScrapeMode = 'static' | 'browser';
 
+/** 抽出方式 */
+export type ExtractionMode = 'generic' | 'selector-based';
+
+/** セレクタ一致件数 */
+export interface SelectorMatchInfo {
+  titleCount: number;
+  bodyCount: number;
+  linkCount: number;
+}
+
 /** 認証モード (将来用) */
 export type AuthMode = 'none' | 'basic' | 'form' | 'cookie' | 'manual';
 
@@ -39,6 +49,12 @@ export interface ScrapeResult {
   /** ステータスコード */
   statusCode?: number;
   error?: string;
+  /** 抽出方式 */
+  extractionMode?: ExtractionMode;
+  /** セレクタ使用時の一致件数 */
+  selectorMatchInfo?: SelectorMatchInfo;
+  /** 警告 (セレクタ未一致・不正など) */
+  warnings?: string[];
 }
 
 export interface ScrapeLink {
