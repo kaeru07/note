@@ -79,13 +79,13 @@ export default function HomePage() {
   }, [saveHistory]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col min-h-screen md:h-screen overflow-x-hidden">
       {/* トップバー */}
       <header className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-shrink-0">
         <span className="text-base font-bold text-white tracking-tight">🔬 Scrape Lab</span>
-        <span className="text-xs text-gray-600">手動スクレイピング実験ツール</span>
-        <div className="ml-auto flex items-center gap-3 text-xs text-gray-600">
-          <span>Phase 1 — MVP</span>
+        <span className="hidden sm:inline text-xs text-gray-600">手動スクレイピング実験ツール</span>
+        <div className="ml-auto flex items-center gap-2 text-xs text-gray-600">
+          <span className="hidden sm:inline">Phase 1 — MVP</span>
           <a
             href="https://github.com/kaeru07/note"
             target="_blank"
@@ -97,20 +97,20 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* 3カラムレイアウト */}
-      <div className="flex flex-1 min-h-0">
-        {/* 左：入力パネル */}
-        <div className="w-64 flex-shrink-0 border-r border-gray-800">
+      {/* モバイル: 縦積み / md以上: 3カラム */}
+      <div className="flex flex-col md:flex-row flex-1 md:min-h-0">
+        {/* 入力パネル */}
+        <div className="w-full md:w-64 md:flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-800">
           <InputPanel onSubmit={handleSubmit} isLoading={isLoading} />
         </div>
 
-        {/* 中央：結果パネル */}
+        {/* 結果パネル */}
         <div className="flex-1 min-w-0">
           <ResultPanel result={result} isLoading={isLoading} error={error} />
         </div>
 
-        {/* 右：履歴パネル */}
-        <div className="w-72 flex-shrink-0 border-l border-gray-800">
+        {/* 履歴パネル */}
+        <div className="w-full md:w-72 md:flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-800">
           <HistoryPanel
             history={history}
             onRerun={handleSubmit}

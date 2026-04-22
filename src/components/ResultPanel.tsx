@@ -22,7 +22,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
 
   if (isLoading) {
     return (
-      <main className="flex items-center justify-center h-full text-gray-500">
+      <main className="flex items-center justify-center min-h-[50vh] md:h-full overflow-x-hidden text-gray-500">
         <div className="text-center">
           <div className="text-3xl mb-2 animate-pulse">⟳</div>
           <p className="text-sm">取得中…</p>
@@ -33,7 +33,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
 
   if (error) {
     return (
-      <main className="flex items-center justify-center h-full p-4">
+      <main className="flex items-center justify-center min-h-[50vh] md:h-full overflow-x-hidden p-4">
         <div className="bg-red-950 border border-red-800 rounded-lg p-4 max-w-lg w-full">
           <p className="text-red-400 text-sm font-semibold mb-1">エラー</p>
           <p className="text-red-300 text-sm font-mono break-all">{error}</p>
@@ -44,7 +44,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
 
   if (!result) {
     return (
-      <main className="flex items-center justify-center h-full text-gray-600">
+      <main className="flex items-center justify-center min-h-[50vh] md:h-full overflow-x-hidden text-gray-600">
         <div className="text-center">
           <p className="text-4xl mb-3">🔍</p>
           <p className="text-sm">URL を入力して実行してください</p>
@@ -61,9 +61,9 @@ export function ResultPanel({ result, isLoading, error }: Props) {
   ];
 
   return (
-    <main className="flex flex-col h-full overflow-hidden bg-gray-950 text-gray-100">
+    <main className="flex flex-col min-h-[50vh] md:h-full md:overflow-hidden overflow-x-hidden overflow-y-auto bg-gray-950 text-gray-100">
       {/* ヘッダー */}
-      <div className="flex items-start justify-between px-4 pt-4 pb-2 border-b border-gray-800 flex-shrink-0">
+      <div className="flex flex-wrap items-start gap-2 px-4 pt-4 pb-2 border-b border-gray-800 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold text-white truncate" title={result.title}>
             {result.title}
@@ -72,11 +72,11 @@ export function ResultPanel({ result, isLoading, error }: Props) {
             href={result.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-400 hover:underline truncate block"
+            className="text-xs text-blue-400 hover:underline break-all block"
           >
             {result.url}
           </a>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
             <span
               className={`px-1.5 py-0.5 rounded text-xs font-mono ${
                 result.mode === 'static'
@@ -99,7 +99,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
         </div>
 
         {/* エクスポートボタン */}
-        <div className="flex gap-2 ml-4 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => downloadJson(exportResultAsJson(result), 'scrape')}
             className="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded transition-colors"
@@ -116,7 +116,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
       </div>
 
       {/* タブ */}
-      <div className="flex border-b border-gray-800 px-4 flex-shrink-0">
+      <div className="flex overflow-x-auto border-b border-gray-800 px-4 flex-shrink-0 no-scrollbar">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -179,13 +179,49 @@ function OverviewTab({ result }: { result: ScrapeResult }) {
         </span>
       </div>
 
+      {/* 使用したセレクタ */}
+      {result.usedSelectors && (
+        <div className="flex gap-3">
+          <span className="text-xs text-gray-500 w-24 shrink-0">使用セレクタ</span>
+          <div className="flex flex-col gap-0.5">
+            {result.usedSelectors.title && (
+              <div className="flex gap-1.5 text-xs">
+                <span className="text-gray-600 w-8 shrink-0">title</span>
+                <code className="text-purple-300 font-mono break-all">{result.usedSelectors.title}</code>
+              </div>
+            )}
+            {result.usedSelectors.body && (
+              <div className="flex gap-1.5 text-xs">
+                <span className="text-gray-600 w-8 shrink-0">body</span>
+                <code className="text-purple-300 font-mono break-all">{result.usedSelectors.body}</code>
+              </div>
+            )}
+            {result.usedSelectors.links && (
+              <div className="flex gap-1.5 text-xs">
+                <span className="text-gray-600 w-8 shrink-0">links</span>
+                <code className="text-purple-300 font-mono break-all">{result.usedSelectors.links}</code>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* セレクタ一致件数 */}
       {result.selectorMatchInfo && (
-        <InfoRow
-          label="セレクタ一致"
-          value={`title: ${result.selectorMatchInfo.titleCount}件 / body: ${result.selectorMatchInfo.bodyCount}件 / link: ${result.selectorMatchInfo.linkCount}件`}
-          mono
-        />
+        <div className="flex gap-3">
+          <span className="text-xs text-gray-500 w-24 shrink-0">一致件数</span>
+          <div className="flex gap-3 text-xs font-mono">
+            <span className={result.selectorMatchInfo.titleCount === 0 && result.usedSelectors?.title ? 'text-yellow-400' : 'text-gray-300'}>
+              title: {result.selectorMatchInfo.titleCount}件
+            </span>
+            <span className={result.selectorMatchInfo.bodyCount === 0 && result.usedSelectors?.body ? 'text-yellow-400' : 'text-gray-300'}>
+              body: {result.selectorMatchInfo.bodyCount}件
+            </span>
+            <span className={result.selectorMatchInfo.linkCount === 0 && result.usedSelectors?.links ? 'text-yellow-400' : 'text-gray-300'}>
+              link: {result.selectorMatchInfo.linkCount}件
+            </span>
+          </div>
+        </div>
       )}
 
       <InfoRow label="ステータス" value={result.statusCode ? `HTTP ${result.statusCode}` : '—'} />
@@ -280,7 +316,7 @@ function MetaTab({ result }: { result: ScrapeResult }) {
       )}
       {entries.map(([k, v]) => (
         <div key={k} className="flex gap-2 p-2 bg-gray-900 rounded border border-gray-800">
-          <span className="text-xs text-blue-400 font-mono shrink-0 w-48 truncate">{k}</span>
+          <span className="text-xs text-blue-400 font-mono shrink-0 w-24 md:w-48 truncate">{k}</span>
           <span className="text-xs text-gray-300 break-all">{v}</span>
         </div>
       ))}

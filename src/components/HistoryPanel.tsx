@@ -11,7 +11,7 @@ interface Props {
 
 export function HistoryPanel({ history, onRerun, onClear }: Props) {
   return (
-    <aside className="flex flex-col bg-gray-900 text-gray-100 h-full overflow-hidden">
+    <aside className="flex flex-col bg-gray-900 text-gray-100 w-full min-h-[30vh] md:h-full overflow-x-hidden md:overflow-hidden">
       {/* ヘッダー */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 flex-shrink-0">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
@@ -89,7 +89,7 @@ function HistoryCard({
       </p>
 
       {/* バッジ行 */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
         <span
           className={`px-1 rounded font-mono ${
             r.mode === 'static' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'

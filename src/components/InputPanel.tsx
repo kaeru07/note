@@ -46,7 +46,7 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
   };
 
   return (
-    <aside className="flex flex-col gap-4 p-4 bg-gray-900 text-gray-100 min-h-0 overflow-y-auto">
+    <aside className="flex flex-col gap-4 p-4 bg-gray-900 text-gray-100 w-full min-h-0 overflow-x-hidden overflow-y-auto">
       <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">入力</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
