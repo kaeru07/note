@@ -51,6 +51,8 @@ export interface ScrapeResult {
   error?: string;
   /** 抽出方式 */
   extractionMode?: ExtractionMode;
+  /** selector-based 抽出時に実際に使用したセレクタ */
+  usedSelectors?: ScrapeSelectors;
   /** セレクタ使用時の一致件数 */
   selectorMatchInfo?: SelectorMatchInfo;
   /** 警告 (セレクタ未一致・不正など) */

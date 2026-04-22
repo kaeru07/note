@@ -155,6 +155,13 @@ export class StaticScraper extends BaseScraper {
     const selectorMatchInfo: SelectorMatchInfo | undefined = hasAnySel
       ? { titleCount, bodyCount, linkCount }
       : undefined;
+    const usedSelectors = hasAnySel
+      ? {
+          title: sel.title?.trim() || undefined,
+          body: sel.body?.trim() || undefined,
+          links: sel.links?.trim() || undefined,
+        }
+      : undefined;
 
     return {
       url: request.url,
@@ -167,6 +174,7 @@ export class StaticScraper extends BaseScraper {
       durationMs: Date.now() - t0,
       statusCode,
       extractionMode,
+      usedSelectors,
       selectorMatchInfo,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
