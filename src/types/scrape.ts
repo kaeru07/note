@@ -30,6 +30,8 @@ export interface ScrapeRequest {
   authConfig?: AuthConfig;
   /** セレクタカスタマイズ */
   selectors?: ScrapeSelectors;
+  /** Cookie データ (Netscape 形式 / raw 形式) */
+  cookies?: string;
 }
 
 // ── 結果 ──────────────────────────────────────────────────

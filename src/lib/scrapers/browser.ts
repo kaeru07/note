@@ -1,24 +1,18 @@
 import type { ScrapeRequest, ScrapeResult } from '@/types/scrape';
+import { cookiesToPlaywright } from '../cookieParser';
+import { parseHtml } from '../htmlParser';
 import { BaseScraper } from './base';
 
-/**
- * BrowserScraper — Playwright によるブラウザ取得 (Phase 2 実装予定)
- *
- * 向き: SPA、JS レンダリング必須サイト、ログイン必須サイト、2FA 対応
- * 不向き: 高速一括取得 (StaticScraper に劣る)
- *
- * 将来実装ポイント:
- *   1. `npm install playwright`
- *   2. この scrape() に chromium.launch() の実装を追加
- *   3. AuthConfig.storageStatePath で storageState を注入
- *   4. AuthConfig.requiresTwoFactor が true のとき手動介入を待機
- */
+const USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+const BROWSER_TIMEOUT_MS = 45_000;
+
 export class BrowserScraper extends BaseScraper {
   async isAvailable(): Promise<boolean> {
     try {
-      // eval('require') でバンドラー/TypeScript の静的解析を回避しつつ実行時チェック
-      const _require = eval('require') as (m: string) => unknown;
-      _require('playwright');
+      await import('playwright-core');
       return true;
     } catch {
       return false;
@@ -28,41 +22,58 @@ export class BrowserScraper extends BaseScraper {
   async scrape(request: ScrapeRequest): Promise<ScrapeResult> {
     const t0 = Date.now();
 
-    const available = await this.isAvailable();
-    if (!available) {
-      return this.makeErrorResult(
-        request,
-        'BrowserScraper requires Playwright. Run: npm install playwright && npx playwright install chromium',
-        t0,
-      );
+    try {
+      const { chromium } = await import('playwright-core');
+      const launchOptions = await resolveLaunchOptions();
+
+      const browser = await chromium.launch(launchOptions);
+      try {
+        const context = await browser.newContext({ userAgent: USER_AGENT });
+
+        if (request.cookies) {
+          const cookies = cookiesToPlaywright(request.cookies, request.url);
+          if (cookies.length > 0) await context.addCookies(cookies);
+        }
+
+        const page = await context.newPage();
+
+        // メインリクエストのステータスコードを捕捉
+        let statusCode = 200;
+        page.on('response', (r) => {
+          if (r.url() === request.url || r.url() === request.url + '/') {
+            statusCode = r.status();
+          }
+        });
+
+        await page.goto(request.url, { waitUntil: 'networkidle', timeout: BROWSER_TIMEOUT_MS });
+
+        const html = await page.content();
+        return parseHtml(request, html, statusCode, t0);
+      } finally {
+        await browser.close();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return this.makeErrorResult(request, `BrowserScraper: ${msg}`, t0);
     }
+  }
+}
 
-    // ── Phase 2 実装ここから ─────────────────────────────
-    //
-    // const { chromium } = await import('playwright');
-    // const browser = await chromium.launch({ headless: true });
-    //
-    // // storageState (cookie) を注入
-    // const contextOptions: Parameters<typeof browser.newContext>[0] = {};
-    // if (request.authConfig?.storageStatePath) {
-    //   contextOptions.storageState = request.authConfig.storageStatePath;
-    // }
-    //
-    // const context = await browser.newContext(contextOptions);
-    // const page = await context.newPage();
-    // await page.goto(request.url, { waitUntil: 'networkidle' });
-    //
-    // // 2FA 手動介入: headless: false にして pause()
-    // if (request.authConfig?.requiresTwoFactor) {
-    //   await page.pause(); // ユーザーが操作後に再開
-    // }
-    //
-    // const html = await page.content();
-    // await browser.close();
-    // return parseHtml(request, html, 200, t0); // StaticScraper のパーサーを再利用可能
-    //
-    // ────────────────────────────────────────────────────
-
-    return this.makeErrorResult(request, 'BrowserScraper: Phase 2 未実装', t0);
+/**
+ * 実行環境に応じた Chromium 起動オプションを解決する。
+ * Vercel (Lambda 環境) では @sparticuz/chromium を使用。
+ * ローカル開発では playwright のインストール済み Chromium を使用。
+ */
+async function resolveLaunchOptions() {
+  try {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    return {
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true as const,
+    };
+  } catch {
+    // ローカル: playwright でインストールされた Chromium を使用
+    return { headless: true as const };
   }
 }

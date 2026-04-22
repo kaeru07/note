@@ -1,11 +1,5 @@
 import type { SiteProfile } from '@/types/scrape';
 
-/**
- * 組み込みサイトプロファイル
- *
- * 追加方法: この配列にエントリを追加するだけで UI に自動反映される。
- * カスタムセレクターを使うことでサイト別の精度向上が可能。
- */
 export const BUILT_IN_PROFILES: SiteProfile[] = [
   {
     id: 'generic',
@@ -18,7 +12,7 @@ export const BUILT_IN_PROFILES: SiteProfile[] = [
     id: 'github',
     name: 'GitHub',
     urlPattern: 'github\\.com',
-    description: 'GitHub リポジトリ・Issue・PR ページ向け',
+    description: 'リポジトリ・Issue・PR ページ向け',
     loginRequired: false,
     selectors: {
       title: 'title',
@@ -47,26 +41,77 @@ export const BUILT_IN_PROFILES: SiteProfile[] = [
       body: '.it-MdContent',
     },
   },
-  // ── Phase 2: ログイン必須サイトの雛形 ───────────────────
-  // {
-  //   id: 'example-login',
-  //   name: 'Example (要ログイン)',
-  //   urlPattern: 'example\\.com',
-  //   description: 'ログイン必須サイトのサンプル',
-  //   loginRequired: true,
-  //   authConfig: {
-  //     authMode: 'form',
-  //     loginUrl: 'https://example.com/login',
-  //     storageStatePath: './data/example_state.json',
-  //   },
-  // },
+  {
+    id: 'note',
+    name: 'note',
+    urlPattern: 'note\\.com',
+    description: 'note 記事向け',
+    loginRequired: false,
+    selectors: {
+      title: 'h1',
+      body: '.note-common-styles__textnote-body, article',
+    },
+  },
+  {
+    id: 'hatena',
+    name: 'はてなブログ',
+    urlPattern: 'hatenablog\\.com|hatena\\.ne\\.jp',
+    description: 'はてなブログ記事向け',
+    loginRequired: false,
+    selectors: {
+      title: '.entry-title',
+      body: '.entry-content',
+    },
+  },
+  {
+    id: 'mdn',
+    name: 'MDN Web Docs',
+    urlPattern: 'developer\\.mozilla\\.org',
+    description: 'MDN Web Docs リファレンス向け',
+    loginRequired: false,
+    selectors: {
+      title: 'h1',
+      body: 'article.main-page-content',
+    },
+  },
+  {
+    id: 'npm',
+    name: 'npm',
+    urlPattern: 'npmjs\\.com',
+    description: 'npm パッケージページ向け',
+    loginRequired: false,
+    selectors: {
+      title: 'h1, h2.f2',
+      body: '#readme',
+    },
+  },
+  {
+    id: 'amazon-jp',
+    name: 'Amazon JP',
+    urlPattern: 'amazon\\.co\\.jp',
+    description: 'Amazon.co.jp 商品ページ向け',
+    loginRequired: false,
+    selectors: {
+      title: '#productTitle',
+      body: '#feature-bullets, #productDescription',
+    },
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    urlPattern: 'youtube\\.com|youtu\\.be',
+    description: 'YouTube 動画ページ向け (JS レンダリング推奨)',
+    loginRequired: false,
+    selectors: {
+      title: 'title',
+    },
+  },
 ];
 
 export function findProfile(id: string): SiteProfile | undefined {
   return BUILT_IN_PROFILES.find((p) => p.id === id);
 }
 
-/** URL からプロファイルを自動推定 */
 export function detectProfile(url: string): SiteProfile {
   const matched = BUILT_IN_PROFILES.filter((p) => p.id !== 'generic').find((p) => {
     try {

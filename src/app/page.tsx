@@ -6,12 +6,14 @@ import type { ScrapeApiResponse, ScrapeHistoryItem, ScrapeRequest, ScrapeResult 
 import { HistoryPanel } from '@/components/HistoryPanel';
 import { InputPanel } from '@/components/InputPanel';
 import { ResultPanel } from '@/components/ResultPanel';
+import { computeDiff, type DiffResult } from '@/lib/diff';
 
 const HISTORY_KEY = 'scrapelab_history';
 const MAX_HISTORY = 50;
 
 export default function HomePage() {
   const [result, setResult] = useState<ScrapeResult | null>(null);
+  const [diff, setDiff] = useState<DiffResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<ScrapeHistoryItem[]>([]);
@@ -40,6 +42,7 @@ export default function HomePage() {
       setIsLoading(true);
       setError(null);
       setResult(null);
+      setDiff(null);
 
       try {
         const res = await fetch('/api/scrape', {
@@ -56,6 +59,10 @@ export default function HomePage() {
         }
 
         setResult(data.result);
+
+        // 同一 URL の直近結果があれば差分を計算
+        const prevItem = [...history].reverse().find((h) => h.request.url === request.url);
+        if (prevItem) setDiff(computeDiff(prevItem.result, data.result));
 
         // 履歴に追加
         const item: ScrapeHistoryItem = {
@@ -106,7 +113,7 @@ export default function HomePage() {
 
         {/* 結果パネル */}
         <div className="flex-1 min-w-0">
-          <ResultPanel result={result} isLoading={isLoading} error={error} />
+          <ResultPanel result={result} isLoading={isLoading} error={error} diff={diff} />
         </div>
 
         {/* 履歴パネル */}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ScrapeResult } from '@/types/scrape';
+import type { DiffResult } from '@/lib/diff';
 import {
   downloadCsv,
   downloadJson,
@@ -13,11 +14,12 @@ interface Props {
   result: ScrapeResult | null;
   isLoading: boolean;
   error: string | null;
+  diff?: DiffResult | null;
 }
 
-type Tab = 'overview' | 'body' | 'links' | 'meta';
+type Tab = 'overview' | 'body' | 'links' | 'meta' | 'diff';
 
-export function ResultPanel({ result, isLoading, error }: Props) {
+export function ResultPanel({ result, isLoading, error, diff }: Props) {
   const [tab, setTab] = useState<Tab>('overview');
 
   if (isLoading) {
@@ -58,6 +60,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
     { id: 'body', label: '本文' },
     { id: 'links', label: `リンク (${result.links.length})` },
     { id: 'meta', label: `Meta (${Object.keys(result.meta).length})` },
+    ...(diff ? [{ id: 'diff' as Tab, label: diff.hasDiff ? '⚡ 変更' : '変更なし' }] : []),
   ];
 
   return (
@@ -138,6 +141,7 @@ export function ResultPanel({ result, isLoading, error }: Props) {
         {tab === 'body' && <BodyTab result={result} />}
         {tab === 'links' && <LinksTab result={result} />}
         {tab === 'meta' && <MetaTab result={result} />}
+        {tab === 'diff' && diff && <DiffTab diff={diff} />}
       </div>
     </main>
   );
@@ -329,6 +333,85 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
     <div className="flex gap-3">
       <span className="text-xs text-gray-500 w-24 shrink-0">{label}</span>
       <span className={`text-xs text-gray-200 break-all ${mono ? 'font-mono' : ''}`}>{value}</span>
+    </div>
+  );
+}
+
+function DiffTab({ diff }: { diff: DiffResult }) {
+  if (!diff.hasDiff) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+        <p className="text-2xl mb-2">✓</p>
+        <p className="text-sm">前回の取得から変更はありませんでした</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* タイトル変更 */}
+      {diff.titleChanged && (
+        <div className="bg-gray-900 border border-gray-700 rounded p-3">
+          <p className="text-xs text-gray-400 font-semibold mb-2">タイトル変更</p>
+          <p className="text-xs text-red-400 font-mono break-all line-through opacity-70">
+            {diff.prevTitle}
+          </p>
+          <p className="text-xs text-green-400 font-mono break-all mt-1">{diff.nextTitle}</p>
+        </div>
+      )}
+
+      {/* リンク変化 */}
+      {(diff.linksAdded > 0 || diff.linksRemoved > 0) && (
+        <div className="bg-gray-900 border border-gray-700 rounded p-3">
+          <p className="text-xs text-gray-400 font-semibold mb-2">
+            リンク変化
+            <span className="ml-2 text-green-400">+{diff.linksAdded}</span>
+            <span className="ml-1 text-red-400">-{diff.linksRemoved}</span>
+          </p>
+          <div className="space-y-0.5 max-h-40 overflow-y-auto">
+            {diff.newLinks.map((href, i) => (
+              <p key={`new-${i}`} className="text-xs text-green-400 font-mono break-all">
+                + {href}
+              </p>
+            ))}
+            {diff.removedLinks.map((href, i) => (
+              <p key={`rm-${i}`} className="text-xs text-red-400 font-mono break-all opacity-70 line-through">
+                - {href}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 本文差分 */}
+      {diff.bodyDiff.some((d) => d.type !== 'equal') && (
+        <div className="bg-gray-900 border border-gray-700 rounded p-3">
+          <p className="text-xs text-gray-400 font-semibold mb-2">本文差分 (最大 400 語)</p>
+          <p className="text-xs leading-relaxed font-mono break-words whitespace-pre-wrap">
+            {diff.bodyDiff.map((chunk, i) => {
+              if (chunk.type === 'equal') {
+                return (
+                  <span key={i} className="text-gray-400">
+                    {chunk.text}{' '}
+                  </span>
+                );
+              }
+              if (chunk.type === 'insert') {
+                return (
+                  <span key={i} className="bg-green-900 text-green-300 rounded px-0.5">
+                    {chunk.text}{' '}
+                  </span>
+                );
+              }
+              return (
+                <span key={i} className="bg-red-900 text-red-300 line-through rounded px-0.5 opacity-70">
+                  {chunk.text}{' '}
+                </span>
+              );
+            })}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,8 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
   const [titleSel, setTitleSel] = useState('');
   const [bodySel, setBodySel] = useState('');
   const [linkSel, setLinkSel] = useState('');
+  const [cookies, setCookies] = useState('');
+  const [showCookies, setShowCookies] = useState(false);
 
   const handleUrlChange = (value: string) => {
     setUrl(value);
@@ -31,6 +33,15 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
     }
   };
 
+  const handleCookieFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCookies((ev.target?.result as string) ?? '');
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
@@ -42,6 +53,7 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
       mode,
       siteProfileId: profileId,
       selectors: (t || b || l) ? { title: t, body: b, links: l } : undefined,
+      cookies: cookies.trim() || undefined,
     });
   };
 
@@ -169,35 +181,54 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
         </button>
       </form>
 
-      {/* 将来: ログイン設定 (Phase 2) */}
+      {/* Cookie インポート */}
       <div className="mt-auto pt-4 border-t border-gray-800">
-        <p className="text-xs text-gray-600 font-semibold mb-1">🔒 ログイン設定 (Phase 2)</p>
-        <div className="flex flex-col gap-1 opacity-40 pointer-events-none">
-          <input
-            disabled
-            placeholder="ログイン URL"
-            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-500"
-          />
-          <input
-            disabled
-            placeholder="ユーザー名"
-            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-500"
-          />
-          <input
-            disabled
-            type="password"
-            placeholder="パスワード"
-            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-500"
-          />
-          <div className="flex gap-2">
-            <button disabled className="flex-1 py-1 rounded bg-gray-700 text-xs text-gray-500">
-              ログイン
-            </button>
-            <button disabled className="flex-1 py-1 rounded bg-gray-700 text-xs text-gray-500">
-              State 保存
-            </button>
+        <button
+          type="button"
+          onClick={() => setShowCookies(!showCookies)}
+          className="flex items-center justify-between w-full text-xs text-gray-400 hover:text-gray-300 mb-2"
+        >
+          <span className="font-semibold">🍪 Cookie</span>
+          <span>{showCookies ? '▲' : '▼'}</span>
+        </button>
+        {showCookies && (
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={cookies}
+              onChange={(e) => setCookies(e.target.value)}
+              placeholder={'Netscape 形式 (.txt) またはraw形式\n例: session=abc123; token=xyz'}
+              className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs
+                         text-gray-300 font-mono h-24 resize-none focus:outline-none focus:border-blue-500
+                         placeholder-gray-600"
+            />
+            <div className="flex items-center gap-2">
+              <label className="flex-1 flex items-center justify-center gap-1 py-1 bg-gray-800
+                               border border-gray-700 rounded text-xs text-gray-400 hover:border-gray-500
+                               cursor-pointer transition-colors">
+                📂 ファイルから読込
+                <input type="file" accept=".txt" className="hidden" onChange={handleCookieFile} />
+              </label>
+              {cookies && (
+                <button
+                  type="button"
+                  onClick={() => setCookies('')}
+                  className="px-2 py-1 bg-red-900 border border-red-800 rounded text-xs text-red-300
+                             hover:bg-red-800 transition-colors"
+                >
+                  クリア
+                </button>
+              )}
+            </div>
+            {cookies && (
+              <p className="text-xs text-green-500">
+                ✓ Cookie セット済み ({cookies.split('\n').filter(l => l.trim() && !l.startsWith('#')).length} 件)
+              </p>
+            )}
+            <p className="text-xs text-gray-600">
+              Netscape 形式 (ブラウザエクスポート) または name=value; 形式
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );

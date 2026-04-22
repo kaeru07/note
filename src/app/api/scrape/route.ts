@@ -4,8 +4,8 @@ import { createScraper } from '@/lib/scrapers';
 import { findProfile } from '@/lib/siteProfiles';
 
 export const runtime = 'nodejs';
-// Vercel では最大 60 秒 (Pro) / 10 秒 (Hobby)
-export const maxDuration = 30;
+// Vercel Pro: 最大 60 秒。browser モードはブラウザ起動分を含む。
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest): Promise<NextResponse<ScrapeApiResponse>> {
   let body: unknown;
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ScrapeApiResp
     siteProfileId: raw.siteProfileId,
     authConfig: raw.authConfig,
     selectors: raw.selectors ?? profile?.selectors,
+    cookies: typeof raw.cookies === 'string' ? raw.cookies : undefined,
   };
 
   // ── スクレイピング実行 ────────────────────────────────
