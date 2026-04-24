@@ -54,7 +54,11 @@ export class BrowserScraper extends BaseScraper {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      return this.makeErrorResult(request, `BrowserScraper: ${msg}`, t0);
+      const isTimeout = msg.toLowerCase().includes('timeout');
+      const prefix = isTimeout
+        ? `BrowserScraper タイムアウト (${BROWSER_TIMEOUT_MS / 1000}秒): `
+        : 'BrowserScraper: ';
+      return this.makeErrorResult(request, `${prefix}${msg}`, t0);
     }
   }
 }

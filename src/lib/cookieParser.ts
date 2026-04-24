@@ -47,11 +47,11 @@ export function cookiesToHeader(cookieStr: string): string {
       .join('; ');
   }
 
-  // raw 形式: 複数行は '; ' で結合
+  // raw 形式: 複数行は '; ' で結合。= なし行はスキップ (browser mode と同じ挙動)
   return cookieStr
     .split('\n')
     .map((l) => l.trim())
-    .filter(Boolean)
+    .filter((l) => l.includes('='))
     .join('; ');
 }
 

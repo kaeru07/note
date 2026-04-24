@@ -65,9 +65,10 @@ export default function HomePage() {
         if (prevItem) setDiff(computeDiff(prevItem.result, data.result));
 
         // 履歴に追加
+        // Cookieは生値をlocalStorageに残さない
         const item: ScrapeHistoryItem = {
           id: uuidv4(),
-          request,
+          request: { ...request, cookies: undefined },
           result: data.result,
           timestamp: new Date().toISOString(),
         };
@@ -92,7 +93,7 @@ export default function HomePage() {
         <span className="text-base font-bold text-white tracking-tight">🔬 Scrape Lab</span>
         <span className="hidden sm:inline text-xs text-gray-600">手動スクレイピング実験ツール</span>
         <div className="ml-auto flex items-center gap-2 text-xs text-gray-600">
-          <span className="hidden sm:inline">Phase 1 — MVP</span>
+          <span className="hidden sm:inline">Phase 2</span>
           <a
             href="https://github.com/kaeru07/note"
             target="_blank"

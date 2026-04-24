@@ -80,29 +80,24 @@ export function InputPanel({ onSubmit, isLoading }: Props) {
         <div>
           <label className="block text-xs text-gray-400 mb-1">実行モード</label>
           <div className="flex gap-2">
-            {(['static', 'browser'] as ScrapeMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`flex-1 py-1.5 rounded text-xs font-medium border transition-colors ${
-                  mode === m
-                    ? 'bg-blue-600 border-blue-500 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                }`}
-              >
-                {m === 'static' ? '⚡ static' : '🌐 browser'}
-                {m === 'browser' && (
-                  <span className="ml-1 text-xs opacity-60">(未実装)</span>
-                )}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() => setMode('static')}
+              className="flex-1 py-1.5 rounded text-xs font-medium border transition-colors bg-blue-600 border-blue-500 text-white"
+            >
+              ⚡ static
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Vercel Pro プランが必要です"
+              className="flex-1 py-1.5 rounded text-xs font-medium border bg-gray-800 border-gray-700 text-gray-600 cursor-not-allowed"
+            >
+              🌐 browser
+              <span className="ml-1 text-xs opacity-60">Pro</span>
+            </button>
           </div>
-          <p className="mt-1 text-xs text-gray-600">
-            {mode === 'static'
-              ? 'fetch + Cheerio — 高速・軽量'
-              : 'Playwright — JS レンダリング対応 (Phase 2)'}
-          </p>
+          <p className="mt-1 text-xs text-gray-600">fetch + Cheerio — 高速・軽量</p>
         </div>
 
         {/* サイトプロファイル */}

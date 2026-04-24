@@ -4,8 +4,8 @@ import { createScraper } from '@/lib/scrapers';
 import { findProfile } from '@/lib/siteProfiles';
 
 export const runtime = 'nodejs';
-// Vercel Pro: 最大 60 秒。browser モードはブラウザ起動分を含む。
-export const maxDuration = 60;
+// Vercel Hobby: 最大 10 秒。browser モードは Pro プランが必要。
+export const maxDuration = 10;
 
 export async function POST(req: NextRequest): Promise<NextResponse<ScrapeApiResponse>> {
   let body: unknown;
@@ -38,6 +38,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ScrapeApiResp
   }
 
   const mode = raw.mode === 'browser' ? 'browser' : 'static';
+
+  // browser mode は BROWSER_MODE_ENABLED=true の環境でのみ許可
+  if (mode === 'browser' && process.env.BROWSER_MODE_ENABLED !== 'true') {
+    return NextResponse.json(
+      { success: false, error: 'browser mode は現在利用できません。static mode をお使いください。' },
+      { status: 501 },
+    );
+  }
 
   // サイトプロファイル適用
   const profile = raw.siteProfileId ? findProfile(raw.siteProfileId) : undefined;
